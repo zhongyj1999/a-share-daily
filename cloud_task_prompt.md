@@ -1,11 +1,17 @@
 # Qoder Cloud 定时任务 Prompt
 
-已创建的 Cloud 任务 ID：`ca_MTLXYJ45L2ZC6LDFFPSQJUPSP4`
+## 当前 Cloud 任务
 
-- 仓库：`https://github.com/zhongyj1999/a-share-daily.git`
-- 分支：`main`
-- 触发：cron `10 16 * * 1-5`
-- 时区：`Asia/Shanghai`
+- 任务 ID：`ca_JYWZS5KQNIOF22QK6CXOUFDFPB`
+- 名称：A股每日行情报告（Cloud Every）
+- 模式：每 24 小时执行一次（`everyMs=86400000`）
+- 说明：Qoder Cloud 当前不支持带 weekdays/anchorAt 的 every 模式，因此该任务每天执行；脚本会自动识别非交易日并使用最近交易日数据。
+
+## 旧的 cron 任务
+
+- 任务 ID：`ca_MTLXYJ45L2ZC6LDFFPSQJUPSP4`
+- 规则：`10 16 * * 1-5`，Asia/Shanghai
+- 状态：2026-10-19 16:10 未产生提交，疑似 Cloud cron 未触发。可在 Qoder Automations 中手动删除，避免重复执行。
 
 ## Prompt 文本
 
@@ -41,17 +47,12 @@
 - 该仓库为私有仓库，需要先在 GitHub 安装 **Qoder AI App** 并授权访问 `zhongyj1999/a-share-daily`。
 - 安装地址：https://github.com/settings/installations，找到 `qoderai`，确认仓库已勾选。
 
-## 本地测试命令
+## 本地双保险
 
-在把仓库推送到 GitHub 之前，可以先在本地验证：
+本地定时任务（ID：`fe7dbcce-05e5-4026-b447-97ed7ace625f`）已更新为：
 
-```bash
-cd E:/tcode/daily
-pip install -r requirements.txt
-python scripts/daily_report.py
-python scripts/health_check.py
-```
+- 工作日 16:10（Asia/Shanghai）
+- 工作目录：`E:\tcode\daily`
+- 生成报告后自动 `git add / commit / push` 到 `origin main`
 
-## 双保险
-
-本地仍保留了一个工作日 16:10 的定时任务（ID：`fe7dbcce-05e5-4026-b447-97ed7ace625f`），工作目录为 `E:\tcode\daily`。如果 Cloud 任务因授权/网络问题失败，本地任务会继续生成报告。
+如果 Cloud 任务未触发，本地任务会继续生成并推送报告。
