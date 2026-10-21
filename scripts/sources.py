@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import math
 import re
+import subprocess
 import time
 from collections import defaultdict
 from datetime import datetime
@@ -134,17 +135,46 @@ def request(
     raise last_error
 
 
+def _curl_mint_xueqiu_token() -> str | None:
+    """Use curl to obtain an xq_a_token when Python requests is blocked by WAF."""
+    try:
+        result = subprocess.run(
+            ["curl", "-s", "-D", "-", "-A", UA, "https://www.xueqiu.com/hq"],
+            capture_output=True,
+            check=False,
+            timeout=30,
+        )
+        headers = result.stdout.decode("utf-8", errors="ignore")
+        match = re.search(r"xq_a_token=([^;]+)", headers)
+        if match:
+            return match.group(1)
+    except Exception:
+        pass
+    return None
+
+
 def xueqiu_session() -> requests.Session:
     session = make_session()
+    session.trust_env = False
     session.headers.update({"Referer": "https://xueqiu.com/"})
-    request(
-        session,
-        "GET",
-        "https://xueqiu.com/hq",
-        timeout=20,
-        retries=CRITICAL_RETRIES,
-        backoff=CRITICAL_BACKOFF,
-    )
+    try:
+        request(
+            session,
+            "GET",
+            "https://xueqiu.com/hq",
+            timeout=20,
+            retries=CRITICAL_RETRIES,
+            backoff=CRITICAL_BACKOFF,
+        )
+    except requests.exceptions.HTTPError as exc:
+        if exc.response is not None and exc.response.status_code == 567:
+            token = _curl_mint_xueqiu_token()
+            if token:
+                session.cookies.set("xq_a_token", token, domain=".xueqiu.com")
+            else:
+                raise
+        else:
+            raise
     if "xq_a_token" not in session.cookies.get_dict():
         request(
             session,
